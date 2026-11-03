@@ -129,11 +129,18 @@ main {
 }
 
 .body,
-.bubble {
+.bubble,
+.curve {
     fill: var(--symbol-fill, var(--surface));
     stroke: var(--symbol-line, var(--line));
     stroke-width: 4;
+    stroke-linecap: round;
     stroke-linejoin: round;
+}
+
+/* Extra curve of the XOR / XNOR: just a line, no fill. */
+.curve {
+    fill: none;
 }
 
 /* Gate cards: same layout as the ElectroCalc cards, with colored backgrounds */
@@ -200,7 +207,8 @@ main {
 
 .card-symbol .wire,
 .card-symbol .body,
-.card-symbol .bubble {
+.card-symbol .bubble,
+.card-symbol .curve {
     stroke-width: 7;
 }
 

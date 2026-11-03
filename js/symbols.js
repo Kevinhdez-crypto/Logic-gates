@@ -20,14 +20,75 @@ function svg(content) {
     return `<svg class="gate-symbol" viewBox="${VIEWBOX}" aria-hidden="true">${content}</svg>`;
 }
 
+// There are only four body shapes. Every gate is one of them,
+// with or without a bubble (the little circle that means "inverted").
+//
+//   path   -> the SVG of the body
+//   tip    -> x where the body ends on the right (the output wire starts here)
+//   inputY -> y of each input wire
+//   inputX -> x where each input wire touches the body
+//
+// The OR curve on the left is a bit hollow, so its inputs touch it at x = 57;
+// the extra curve of the XOR is 10 units further left, so they touch it at x = 47.
+const OR_PATH = "M 50 15 Q 100 15 130 50 Q 100 85 50 85 Q 72 50 50 15 Z";
+
+const BODIES = {
+    triangle: {
+        path: `<polygon class="body" points="60,20 60,80 130,50" />`,
+        tip: 130,
+        inputY: [50],
+        inputX: [60]
+    },
+    and: {
+        path: `<path class="body" d="M 50 15 H 95 A 35 35 0 0 1 95 85 H 50 Z" />`,
+        tip: 130,
+        inputY: [30, 70],
+        inputX: [50, 50]
+    },
+    or: {
+        path: `<path class="body" d="${OR_PATH}" />`,
+        tip: 130,
+        inputY: [30, 70],
+        inputX: [57, 57]
+    },
+    xor: {
+        path: `<path class="body" d="${OR_PATH}" /><path class="curve" d="M 40 15 Q 62 50 40 85" />`,
+        tip: 130,
+        inputY: [30, 70],
+        inputX: [47, 47]
+    }
+};
+
+// Returns a function that draws the symbol of a gate.
+function makeSymbol(bodyName, negated) {
+    const body = BODIES[bodyName];
+
+    return ({ inputs = [], output } = {}) => {
+        // Wires are drawn first so the body is on top of them.
+        const inputWires = body.inputY
+            .map((y, index) => wire(0, y, body.inputX[index], y, inputs[index]))
+            .join("");
+
+        // With a bubble, the output wire starts after it.
+        const outputStart = negated ? body.tip + 10 : body.tip;
+        const outputWire = wire(outputStart, 50, 200, 50, output);
+        const bubble = negated
+            ? `<circle class="bubble" cx="${body.tip + 5}" cy="50" r="5" />`
+            : "";
+
+        return svg(`${inputWires}${outputWire}${body.path}${bubble}`);
+    };
+}
+
 const symbols = {
-    // Triangle + bubble on the output.
-    not: ({ inputs = [], output } = {}) => svg(`
-        ${wire(0, 50, 60, 50, inputs[0])}
-        ${wire(140, 50, 200, 50, output)}
-        <polygon class="body" points="60,20 60,80 130,50" />
-        <circle class="bubble" cx="135" cy="50" r="5" />
-    `)
+    buffer: makeSymbol("triangle", false),
+    not:    makeSymbol("triangle", true),
+    and:    makeSymbol("and", false),
+    nand:   makeSymbol("and", true),
+    or:     makeSymbol("or", false),
+    nor:    makeSymbol("or", true),
+    xor:    makeSymbol("xor", false),
+    xnor:   makeSymbol("xor", true)
 };
 
 // Returns the SVG markup of a gate, or "" if that gate has no symbol yet.
